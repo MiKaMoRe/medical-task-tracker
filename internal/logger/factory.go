@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"os"
 
-	"department-api/internal/config"
+	"github.com/MiKaMoRe/medical-task-tracker/internal/config"
 )
 
 func New(env string) (Logger, error) {
