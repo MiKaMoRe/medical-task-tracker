@@ -3,6 +3,7 @@ module github.com/MiKaMoRe/medical-task-tracker
 go 1.26.2
 
 require (
+	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
 	github.com/pressly/goose/v3 v3.27.1
 	gorm.io/driver/postgres v1.6.0

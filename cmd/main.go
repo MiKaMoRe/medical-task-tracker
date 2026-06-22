@@ -53,10 +53,10 @@ func main() {
 
 	// Call commands by name
 	switch command {
-	// case "migration":
-	// 	migrateCommand()
-	// case "run":
-	// 	runCommand()
+	case "migration":
+		migrateCommand()
+	case "run":
+		runCommand()
 	default:
 		fmt.Printf("Unknown command: %s\n", command)
 		printHelp()
