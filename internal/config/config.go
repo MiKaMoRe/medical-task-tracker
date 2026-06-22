@@ -72,6 +72,7 @@ func NewConfig() (*Config, error) {
 	logLevel := loadEnv(&envErrs, "LOG_LEVEL")
 
 	dbHost := loadEnv(&envErrs, "POSTGRES_HOST")
+	appPort := loadEnv(&envErrs, "APP_PORT")
 
 	dbConfig := &DBConfig{
 		Host: dbHost,
@@ -99,7 +100,7 @@ func NewConfig() (*Config, error) {
 	return &Config{
 		Env:      env,
 		LogLevel: logLevel,
-		AppPort:  loadEnv(&envErrs, "APP_PORT"),
+		AppPort:  appPort,
 
 		DB: dbConfig,
 	}, nil

@@ -29,12 +29,20 @@ func NewPostgresDialector(dsn string) gorm.Dialector {
 }
 
 func setOptions(opts *Options) {
-	if opts == nil {
-		opts = &Options{}
-	}
-
 	if opts.MaxIdleConns == 0 {
 		opts.MaxIdleConns = 2
+	}
+
+	if opts.MaxOpenConns == 0 {
+		opts.MaxOpenConns = 100
+	}
+
+	if opts.ConnMaxLifetime == 0 {
+		opts.ConnMaxLifetime = 10 * time.Minute
+	}
+
+	if opts.ConnMaxIdleTime == 0 {
+		opts.ConnMaxIdleTime = 5 * time.Minute
 	}
 
 	if opts.LogLevel == 0 {
