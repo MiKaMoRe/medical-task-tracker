@@ -40,5 +40,7 @@ func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.Ok(w, savedTask)
+	if err := response.Ok(w, mapTaskResponse(savedTask)); err != nil {
+		h.handleError(w, r, err)
+	}
 }

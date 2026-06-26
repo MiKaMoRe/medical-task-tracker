@@ -6,8 +6,7 @@ import (
 	"time"
 
 	apperrors "github.com/MiKaMoRe/medical-task-tracker/internal/domain/errors"
-	"github.com/MiKaMoRe/medical-task-tracker/internal/domain/task"
-	taskDomain "github.com/MiKaMoRe/medical-task-tracker/internal/domain/task"
+	domaintask "github.com/MiKaMoRe/medical-task-tracker/internal/domain/task"
 	"github.com/MiKaMoRe/medical-task-tracker/internal/http/response"
 )
 
@@ -34,7 +33,9 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.Created(w, createdTask)
+	if err := response.Created(w, mapTaskResponse(createdTask)); err != nil {
+		h.handleError(w, r, err)
+	}
 }
 
 func mapTaskRequest(
@@ -44,10 +45,10 @@ func mapTaskRequest(
 	isRecurring bool,
 	tags []string,
 	recurringReq *CreateRecurringTask,
-) (*task.Task, error) {
+) (*domaintask.Task, error) {
 	valErrs := apperrors.NewValidationMap()
 
-	task, errs := taskDomain.NewTask(
+	task, errs := domaintask.NewTask(
 		title,
 		description,
 		date,
@@ -59,7 +60,7 @@ func mapTaskRequest(
 	}
 
 	if recurringReq != nil {
-		recurring, errs := taskDomain.NewRecurringTask(
+		recurring, errs := domaintask.NewRecurringTask(
 			recurringReq.RecurringType,
 			recurringReq.EndDate,
 			mapRecurrenceRuleInput(recurringReq),
@@ -72,12 +73,12 @@ func mapTaskRequest(
 	return task, valErrs.Err()
 }
 
-func mapRecurrenceRuleInput(req *CreateRecurringTask) taskDomain.RecurrenceRuleInput {
+func mapRecurrenceRuleInput(req *CreateRecurringTask) domaintask.RecurrenceRuleInput {
 	if req == nil {
-		return taskDomain.RecurrenceRuleInput{}
+		return domaintask.RecurrenceRuleInput{}
 	}
 
-	return taskDomain.RecurrenceRuleInput{
+	return domaintask.RecurrenceRuleInput{
 		Weekly:   toWeeklyRuleInput(req.WeeklyRule),
 		Monthly:  toMonthlyRuleInput(req.MonthlyRule),
 		Yearly:   toYearlyRuleInput(req.YearlyRule),
@@ -87,59 +88,59 @@ func mapRecurrenceRuleInput(req *CreateRecurringTask) taskDomain.RecurrenceRuleI
 	}
 }
 
-func toWeeklyRuleInput(req *CreateWeeklyRuleRequest) *taskDomain.WeeklyRecurrenceRuleInput {
+func toWeeklyRuleInput(req *CreateWeeklyRuleRequest) *domaintask.WeeklyRecurrenceRuleInput {
 	if req == nil {
 		return nil
 	}
-	return &taskDomain.WeeklyRecurrenceRuleInput{
+	return &domaintask.WeeklyRecurrenceRuleInput{
 		WeekDay: req.WeekDay,
 	}
 }
 
-func toMonthlyRuleInput(req *CreateMonthlyRuleRequest) *taskDomain.MonthlyRecurrenceRuleInput {
+func toMonthlyRuleInput(req *CreateMonthlyRuleRequest) *domaintask.MonthlyRecurrenceRuleInput {
 	if req == nil {
 		return nil
 	}
-	return &taskDomain.MonthlyRecurrenceRuleInput{
+	return &domaintask.MonthlyRecurrenceRuleInput{
 		MonthDay: req.MonthDay,
 	}
 }
 
-func toYearlyRuleInput(req *CreateYearlyRuleRequest) *taskDomain.YearlyRecurrenceRuleInput {
+func toYearlyRuleInput(req *CreateYearlyRuleRequest) *domaintask.YearlyRecurrenceRuleInput {
 	if req == nil {
 		return nil
 	}
-	return &taskDomain.YearlyRecurrenceRuleInput{
+	return &domaintask.YearlyRecurrenceRuleInput{
 		Month: req.Month,
 		Day:   req.Day,
 	}
 }
 
-func toBiweeklyRuleInput(req *CreateBiweeklyRuleRequest) *taskDomain.BiweeklyRecurrenceRuleInput {
+func toBiweeklyRuleInput(req *CreateBiweeklyRuleRequest) *domaintask.BiweeklyRecurrenceRuleInput {
 	if req == nil {
 		return nil
 	}
-	return &taskDomain.BiweeklyRecurrenceRuleInput{
+	return &domaintask.BiweeklyRecurrenceRuleInput{
 		IsOdd:   req.IsOdd,
 		WeekDay: req.WeekDay,
 	}
 }
 
-func toShiftRuleInput(req *CreateShiftRuleRequest) *taskDomain.ShiftRecurrenceRuleInput {
+func toShiftRuleInput(req *CreateShiftRuleRequest) *domaintask.ShiftRecurrenceRuleInput {
 	if req == nil {
 		return nil
 	}
-	return &taskDomain.ShiftRecurrenceRuleInput{
+	return &domaintask.ShiftRecurrenceRuleInput{
 		NumberOfTaskDays:  req.NumberOfTaskDays,
 		NumberOfShiftDays: req.NumberOfShiftDays,
 	}
 }
 
-func toParityRuleInput(req *CreateParityRuleRequest) *taskDomain.ParityRecurrenceRuleInput {
+func toParityRuleInput(req *CreateParityRuleRequest) *domaintask.ParityRecurrenceRuleInput {
 	if req == nil {
 		return nil
 	}
-	return &taskDomain.ParityRecurrenceRuleInput{
+	return &domaintask.ParityRecurrenceRuleInput{
 		IsEven: req.IsEven,
 	}
 }

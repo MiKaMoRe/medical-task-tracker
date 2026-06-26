@@ -43,7 +43,9 @@ func (h *TaskHandler) GetTasks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.Ok(w, tasks)
+	if err := response.Ok(w, mapTaskResponses(tasks)); err != nil {
+		h.handleError(w, r, err)
+	}
 }
 
 func parsePeriodDate(value string, isUpperBound bool) (time.Time, error) {

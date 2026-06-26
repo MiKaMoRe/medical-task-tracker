@@ -16,7 +16,7 @@ func (s *TaskService) AddTaskTags(ctx context.Context, id domaintask.ID, tags []
 	}
 
 	var updated *domaintask.Task
-	err := s.tx.WithTx(ctx, func(ctx context.Context) error {
+	err := s.withWriteTx(ctx, func(ctx context.Context) error {
 		var err error
 		updated, err = s.repo.AddTaskTags(ctx, id, tags)
 		return err
@@ -35,7 +35,7 @@ func (s *TaskService) RemoveTaskTags(ctx context.Context, id domaintask.ID, tags
 	}
 
 	var updated *domaintask.Task
-	err := s.tx.WithTx(ctx, func(ctx context.Context) error {
+	err := s.withWriteTx(ctx, func(ctx context.Context) error {
 		var err error
 		updated, err = s.repo.RemoveTaskTags(ctx, id, tags)
 		return err

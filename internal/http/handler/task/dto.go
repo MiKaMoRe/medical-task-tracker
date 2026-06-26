@@ -1,6 +1,11 @@
 package task
 
-import "time"
+import (
+	"time"
+
+	domaintag "github.com/MiKaMoRe/medical-task-tracker/internal/domain/tag"
+	domaintask "github.com/MiKaMoRe/medical-task-tracker/internal/domain/task"
+)
 
 type CreateTaskRequest struct {
 	Title       string               `json:"title"`
@@ -59,7 +64,7 @@ type CreateParityRuleRequest struct {
 }
 
 type CreateTaskResponse struct {
-	ID string `json:"id"`
+	ID int `json:"id"`
 }
 
 type GetTaskRequest struct {
@@ -67,13 +72,14 @@ type GetTaskRequest struct {
 }
 
 type GetTaskResponse struct {
-	ID          string    `json:"id"`
-	Title       string    `json:"title"`
-	Description string    `json:"description"`
-	Date        time.Time `json:"date"`
-	DueDate     string    `json:"due_date"`
-	IsRecurring bool      `json:"is_recurring"`
-	Tags        []string  `json:"tags"`
+	ID          int                    `json:"id"`
+	Title       string                 `json:"title"`
+	Description string                 `json:"description"`
+	Date        time.Time              `json:"date"`
+	IsRecurring bool                   `json:"is_recurring"`
+	Status      string                 `json:"status"`
+	Recurring   *RecurringTaskResponse `json:"recurring,omitempty"`
+	Tags        []string               `json:"tags"`
 }
 
 type MarkTaskDoneRequest struct {
@@ -82,4 +88,74 @@ type MarkTaskDoneRequest struct {
 
 type TaskTagsRequest struct {
 	Tags []string `json:"tags"`
+}
+
+type TaskResponse struct {
+	ID          int                    `json:"id"`
+	Title       string                 `json:"title"`
+	Description string                 `json:"description"`
+	Date        time.Time              `json:"date"`
+	IsRecurring bool                   `json:"is_recurring"`
+	Status      string                 `json:"status"`
+	Recurring   *RecurringTaskResponse `json:"recurring,omitempty"`
+	Tags        []TagResponse          `json:"tags"`
+}
+
+type RecurringTaskResponse struct {
+	RecurringType string     `json:"recurring_type"`
+	EndDate       *time.Time `json:"end_date,omitempty"`
+}
+
+type TagResponse struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+func mapTaskResponse(t *domaintask.Task) TaskResponse {
+	return TaskResponse{
+		ID:          t.ID.Int(),
+		Title:       string(t.Title),
+		Description: string(t.Description),
+		Date:        time.Time(t.Date),
+		IsRecurring: t.IsRecurring,
+		Status:      string(t.Status),
+		Recurring:   mapRecurringResponse(t.Recurring),
+		Tags:        mapTagResponses(t.Tags),
+	}
+}
+
+func mapTaskResponses(tasks []*domaintask.Task) []TaskResponse {
+	items := make([]TaskResponse, len(tasks))
+	for i := range tasks {
+		items[i] = mapTaskResponse(tasks[i])
+	}
+	return items
+}
+
+func mapRecurringResponse(recurring *domaintask.RecurringTask) *RecurringTaskResponse {
+	if recurring == nil {
+		return nil
+	}
+
+	var endDate *time.Time
+	if recurring.EndDate != nil {
+		value := time.Time(*recurring.EndDate)
+		endDate = &value
+	}
+
+	return &RecurringTaskResponse{
+		RecurringType: recurring.RecurringType.String(),
+		EndDate:       endDate,
+	}
+}
+
+func mapTagResponses(tags []domaintag.Tag) []TagResponse {
+	items := make([]TagResponse, len(tags))
+	for i := range tags {
+		items[i] = TagResponse{
+			ID:   tags[i].ID.String(),
+			Name: tags[i].Name.String(),
+		}
+	}
+	return items
 }

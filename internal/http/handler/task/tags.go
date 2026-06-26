@@ -34,7 +34,9 @@ func (h *TaskHandler) AddTaskTags(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.Ok(w, updated)
+	if err := response.Ok(w, mapTaskResponse(updated)); err != nil {
+		h.handleError(w, r, err)
+	}
 }
 
 func (h *TaskHandler) RemoveTaskTags(w http.ResponseWriter, r *http.Request) {
@@ -50,7 +52,9 @@ func (h *TaskHandler) RemoveTaskTags(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.Ok(w, updated)
+	if err := response.Ok(w, mapTaskResponse(updated)); err != nil {
+		h.handleError(w, r, err)
+	}
 }
 
 func decodeTagsRequest(r *http.Request) (domaintask.ID, TaskTagsRequest, error) {

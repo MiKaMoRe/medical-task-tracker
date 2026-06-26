@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"os"
 	"os/signal"
 	"syscall"
 	"time"
@@ -18,9 +17,6 @@ import (
 )
 
 func runCommand() {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
 	var log logger.Logger
 	cfg, err := config.NewConfig()
 	if err != nil {
@@ -44,12 +40,13 @@ func runCommand() {
 
 	application := app.NewApp(cfg, gormDB, log)
 
-	mux := http.NewServeMux()
-	application.RegisterRoutes(mux)
-
 	srv := &http.Server{
-		Addr:    ":" + cfg.AppPort,
-		Handler: application.Handler(),
+		Addr:              ":" + cfg.AppPort,
+		Handler:           application.Handler(),
+		ReadTimeout:       15 * time.Second,
+		ReadHeaderTimeout: 5 * time.Second,
+		WriteTimeout:      15 * time.Second,
+		IdleTimeout:       60 * time.Second,
 	}
 
 	serverErr := make(chan error, 1)
@@ -61,28 +58,26 @@ func runCommand() {
 		}
 	}()
 
-	// Gracefull shutdown
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	defer signal.Stop(quit)
+	// Graceful shutdown
+	signalCtx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
 
 	select {
-	case sig := <-quit:
-		log.Info("Shutdown signal received", "signal", sig)
+	case <-signalCtx.Done():
+		log.Info("Shutdown signal received")
 	case err := <-serverErr:
 		log.Error("Server error, initializing shutdown", "error", err)
-	case <-ctx.Done():
-		log.Info("Context cancelled")
 	}
 
-	cancel()
-
-	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 15*time.Second)
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer shutdownCancel()
 
 	log.Info("Shutting down HTTP server...")
 	if err := srv.Shutdown(shutdownCtx); err != nil {
 		log.Error("HTTP server forced to shutdown", "error", err)
+		if closeErr := srv.Close(); closeErr != nil {
+			log.Error("Failed to close HTTP server", "error", closeErr)
+		}
 	} else {
 		log.Info("HTTP server stopped")
 	}

@@ -34,5 +34,7 @@ func (h *TaskHandler) GetTask(w http.ResponseWriter, r *http.Request) {
 		h.handleError(w, r, apperrors.NotFound("task not found"))
 		return
 	}
-	response.Ok(w, task)
+	if err := response.Ok(w, mapTaskResponse(task)); err != nil {
+		h.handleError(w, r, err)
+	}
 }

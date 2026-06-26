@@ -22,9 +22,18 @@ type TaskRepository interface {
 
 type TaskService struct {
 	repo TaskRepository
-	tx   txrunner.Runner
+	// All write use-cases must execute through this runner to keep a single
+	// transaction policy across create/update/delete/done/tags operations.
+	tx txrunner.Runner
 }
 
 func NewTaskService(repo TaskRepository, tx txrunner.Runner) *TaskService {
 	return &TaskService{repo: repo, tx: tx}
+}
+
+func (s *TaskService) withWriteTx(ctx context.Context, fn func(ctx context.Context) error) error {
+	if s.tx == nil {
+		return fn(ctx)
+	}
+	return s.tx.WithTx(ctx, fn)
 }
