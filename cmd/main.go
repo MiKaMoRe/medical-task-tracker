@@ -15,12 +15,22 @@ import (
 	"os"
 	"strings"
 
+	"github.com/MiKaMoRe/medical-task-tracker/internal/config"
+	"github.com/MiKaMoRe/medical-task-tracker/internal/logger"
 	"github.com/joho/godotenv"
 )
 
 func main() {
+	log := logger.MustNewWithConfigLevel(config.EnvProd, config.LogLevelInfo)
+	defer func() {
+		if err := log.Close(); err != nil {
+			fmt.Printf("failed to close logger: %v\n", err)
+		}
+	}()
+
 	// Check if no arguments
 	if len(os.Args) < 2 {
+		log.Warn("Command required")
 		fmt.Println("No arguments")
 		printHelp()
 		os.Exit(1)
@@ -31,7 +41,7 @@ func main() {
 	isLocal := flag.Bool("local", false, "Run application with .env.local environment")
 	isHelp := flag.Bool("help", false, "Prints help")
 
-	parseFlags()
+	parseFlags(log)
 
 	if *isHelp {
 		printHelp()
@@ -48,6 +58,7 @@ func main() {
 	// Load environment variables
 	err := godotenv.Load(envFile)
 	if err != nil {
+		log.Warn("Failed to load env file", "file", envFile, "error", err.Error())
 		fmt.Printf("Error loading ENV file: %v", err)
 	}
 
@@ -58,13 +69,14 @@ func main() {
 	case "run":
 		runCommand()
 	default:
+		log.Warn("Unknown command", "command", command)
 		fmt.Printf("Unknown command: %s\n", command)
 		printHelp()
 		os.Exit(1)
 	}
 }
 
-func parseFlags() {
+func parseFlags(log logger.Logger) {
 	var flagsOnly []string
 	for _, arg := range os.Args[2:] {
 		if strings.HasPrefix(arg, "-") {
@@ -73,6 +85,7 @@ func parseFlags() {
 	}
 
 	if err := flag.CommandLine.Parse(flagsOnly); err != nil {
+		log.Error("Failed to parse flags", "error", err.Error())
 		fmt.Printf("Error parsing flags: %s\n", err)
 		os.Exit(1)
 	}

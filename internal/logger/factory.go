@@ -9,6 +9,18 @@ import (
 )
 
 func New(env string) (Logger, error) {
+	level := slog.LevelInfo
+	if env == config.EnvDev {
+		level = slog.LevelDebug
+	}
+	return NewWithLevel(env, level)
+}
+
+func NewWithConfigLevel(env, level string) (Logger, error) {
+	return NewWithLevel(env, parseSlogLevel(level))
+}
+
+func NewWithLevel(env string, level slog.Level) (Logger, error) {
 	var (
 		l   Logger
 		err error
@@ -16,11 +28,11 @@ func New(env string) (Logger, error) {
 
 	switch env {
 	case config.EnvDev:
-		l, err = newDevLogger()
+		l, err = newDevLogger(level)
 	case config.EnvTest:
-		l = newJSONLogger(os.Stdout, slog.LevelInfo)
+		l = newJSONLogger(os.Stdout, level)
 	case config.EnvProd:
-		l = newJSONLogger(os.Stdout, slog.LevelInfo)
+		l = newJSONLogger(os.Stdout, level)
 	default:
 		return nil, fmt.Errorf("logger: unknown environment: %q", env)
 	}
@@ -35,6 +47,14 @@ func New(env string) (Logger, error) {
 
 func MustNew(env string) Logger {
 	l, err := New(env)
+	if err != nil {
+		panic(err)
+	}
+	return l
+}
+
+func MustNewWithConfigLevel(env, level string) Logger {
+	l, err := NewWithConfigLevel(env, level)
 	if err != nil {
 		panic(err)
 	}

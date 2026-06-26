@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 
@@ -13,6 +12,7 @@ import (
 const migrationsDir = "internal/db/migrate/migrations"
 
 func migrateCommand() {
+
 	if len(os.Args) < 3 {
 		fmt.Println("No arguments")
 		printMigrationHelp()
@@ -23,7 +23,8 @@ func migrateCommand() {
 
 	cfg, err := config.NewConfig()
 	if err != nil {
-		log.Fatalf("Failed to load config: %v", err)
+		fmt.Printf("Failed to load config: %v\n", err)
+		os.Exit(1)
 	}
 
 	dsn := cfg.DB.PostgresDSN()
@@ -32,13 +33,15 @@ func migrateCommand() {
 	case "up":
 		fmt.Println("Running migrations...")
 		if err := migrate.Up(dsn); err != nil {
-			log.Fatalf("Migration failed: %v", err)
+			fmt.Printf("Migration failed: %v\n", err)
+			os.Exit(1)
 		}
 		fmt.Println("Migrations applied successfully")
 	case "down":
 		fmt.Println("Rolling back migration...")
 		if err := migrate.Down(dsn); err != nil {
-			log.Fatalf("Rollback failed: %v", err)
+			fmt.Printf("Rollback failed: %v\n", err)
+			os.Exit(1)
 		}
 		fmt.Println("Migration rolled back successfully")
 	case "create":
@@ -68,7 +71,8 @@ func createMigration() {
 	output, err := cmd.CombinedOutput()
 	fmt.Print(string(output))
 	if err != nil {
-		log.Fatalf("Command execution failed: %v", err)
+		fmt.Printf("Command execution failed: %v\n", err)
+		os.Exit(1)
 	}
 }
 

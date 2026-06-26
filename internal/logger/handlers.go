@@ -4,6 +4,8 @@ import (
 	"io"
 	"log/slog"
 	"os"
+
+	"github.com/MiKaMoRe/medical-task-tracker/internal/config"
 )
 
 type slogLogger struct {
@@ -23,15 +25,15 @@ func (l *slogLogger) Close() error {
 	return nil
 }
 
-func newDevLogger() (Logger, error) {
-	stdout := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug})
+func newDevLogger(level slog.Level) (Logger, error) {
+	stdout := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: level})
 
 	f, err := openLogFile()
 	if err != nil || f == nil {
 		return &slogLogger{inner: slog.New(stdout)}, nil
 	}
 
-	file := slog.NewJSONHandler(f, &slog.HandlerOptions{Level: slog.LevelDebug})
+	file := slog.NewJSONHandler(f, &slog.HandlerOptions{Level: level})
 	h := newTeeHandler(stdout, file)
 	return &slogLogger{
 		inner:   slog.New(h),
@@ -42,4 +44,17 @@ func newDevLogger() (Logger, error) {
 func newJSONLogger(w io.Writer, level slog.Level) Logger {
 	h := slog.NewJSONHandler(w, &slog.HandlerOptions{Level: level})
 	return &slogLogger{inner: slog.New(h)}
+}
+
+func parseSlogLevel(level string) slog.Level {
+	switch level {
+	case config.LogLevelDebug:
+		return slog.LevelDebug
+	case config.LogLevelWarn:
+		return slog.LevelWarn
+	case config.LogLevelError:
+		return slog.LevelError
+	default:
+		return slog.LevelInfo
+	}
 }

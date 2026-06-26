@@ -4,31 +4,35 @@ import (
 	"fmt"
 	"time"
 
+	applogger "github.com/MiKaMoRe/medical-task-tracker/internal/logger"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
+	gormlogger "gorm.io/gorm/logger"
 )
 
 const (
-	LogLevelSilent = logger.Silent
-	LogLevelError  = logger.Error
-	LogLevelWarn   = logger.Warn
-	LogLevelInfo   = logger.Info
+	LogLevelSilent = gormlogger.Silent
+	LogLevelError  = gormlogger.Error
+	LogLevelWarn   = gormlogger.Warn
+	LogLevelInfo   = gormlogger.Info
 )
+
+type LogLevel = gormlogger.LogLevel
 
 type Options struct {
 	MaxIdleConns    int
 	MaxOpenConns    int
 	ConnMaxLifetime time.Duration
 	ConnMaxIdleTime time.Duration
-	LogLevel        logger.LogLevel
+	LogLevel        gormlogger.LogLevel
+	AppLogger       applogger.Logger
 }
 
 func NewPostgresDialector(dsn string) gorm.Dialector {
 	return postgres.Open(dsn)
 }
 
-func setOptions(opts *Options) {
+func setOptions(opts *Options) *Options {
 	if opts == nil {
 		opts = &Options{}
 	}
@@ -50,15 +54,22 @@ func setOptions(opts *Options) {
 	}
 
 	if opts.LogLevel == 0 {
-		opts.LogLevel = logger.Error
+		opts.LogLevel = gormlogger.Error
 	}
+
+	return opts
 }
 
 func Connect(dialector gorm.Dialector, opts *Options) (*gorm.DB, error) {
-	setOptions(opts)
+	opts = setOptions(opts)
+
+	dbLogger := gormlogger.Default.LogMode(opts.LogLevel)
+	if opts.AppLogger != nil {
+		dbLogger = newStructuredGormLogger(opts.AppLogger, opts.LogLevel)
+	}
 
 	cfgGorm := &gorm.Config{
-		Logger: logger.Default.LogMode(opts.LogLevel),
+		Logger: dbLogger,
 		NowFunc: func() time.Time {
 			return time.Now().UTC()
 		},

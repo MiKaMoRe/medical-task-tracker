@@ -20,14 +20,19 @@ func runCommand() {
 	var log logger.Logger
 	cfg, err := config.NewConfig()
 	if err != nil {
-		log = logger.MustNew(config.EnvProd)
+		log = logger.MustNewWithConfigLevel(config.EnvProd, config.LogLevelError)
 		log.Error("Failed to load config", "error", err)
 		return
 	}
-	log = logger.MustNew(cfg.Env)
+	log = logger.MustNewWithConfigLevel(cfg.Env, cfg.LogLevel)
+	defer func() {
+		if closeErr := log.Close(); closeErr != nil {
+			log.Error("Failed to close logger", "error", closeErr)
+		}
+	}()
 	log.Info("Starting application...")
 
-	gormDB, err := setupDB(cfg)
+	gormDB, err := setupDB(cfg, log)
 	if err != nil {
 		log.Error("Error while connect to Database", "error", err)
 		return
@@ -90,17 +95,26 @@ func runCommand() {
 	log.Info("Server exited gracefully")
 }
 
-func setupDB(cfg *config.Config) (*gorm.DB, error) {
+func setupDB(cfg *config.Config, log logger.Logger) (*gorm.DB, error) {
 	dialector := gormdb.NewPostgresDialector(cfg.DB.PostgresDSN())
 
-	gormLogLevel := gormdb.LogLevelError
-	if cfg.LogLevel == config.LogLevelInfo {
-		gormLogLevel = gormdb.LogLevelInfo
-	}
-
 	opts := &gormdb.Options{
-		LogLevel: gormLogLevel,
+		LogLevel:  mapConfigLogLevelToGorm(cfg.LogLevel),
+		AppLogger: log,
 	}
 
 	return gormdb.Connect(dialector, opts)
+}
+
+func mapConfigLogLevelToGorm(level string) gormdb.LogLevel {
+	switch level {
+	case config.LogLevelDebug, config.LogLevelInfo:
+		return gormdb.LogLevelInfo
+	case config.LogLevelWarn:
+		return gormdb.LogLevelWarn
+	case config.LogLevelError:
+		return gormdb.LogLevelError
+	default:
+		return gormdb.LogLevelError
+	}
 }

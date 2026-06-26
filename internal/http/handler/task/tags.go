@@ -17,6 +17,12 @@ func (h *TaskHandler) TaskTags(w http.ResponseWriter, r *http.Request) {
 	case http.MethodDelete:
 		h.RemoveTaskTags(w, r)
 	default:
+		h.logger.Warn(
+			"Method not allowed",
+			"method", r.Method,
+			"path", r.URL.Path,
+			"requestId", requestIDFromRequest(r),
+		)
 		_ = response.Error(w, http.StatusMethodNotAllowed, "Method Not Allowed")
 	}
 }
