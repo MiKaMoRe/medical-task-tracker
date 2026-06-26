@@ -1,6 +1,8 @@
 package task
 
-import "github.com/MiKaMoRe/medical-task-tracker/internal/domain/vo"
+import (
+	"github.com/MiKaMoRe/medical-task-tracker/internal/domain/vo"
+)
 
 type Description string
 

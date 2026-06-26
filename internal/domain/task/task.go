@@ -1,44 +1,50 @@
 package task
 
 import (
-	"errors"
+	"time"
 
+	apperrors "github.com/MiKaMoRe/medical-task-tracker/internal/domain/errors"
 	"github.com/MiKaMoRe/medical-task-tracker/internal/domain/tag"
 )
 
 type Task struct {
-	ID          ID             `json:"id"`
-	Title       Title          `json:"title"`
-	Description Description    `json:"description"`
-	Date        Date           `json:"date"`
-	IsRecurring bool           `json:"is_recurring"`
-	Recurring   *RecurringTask `json:"recurring,omitempty"`
-	Tags        []tag.Tag      `json:"tags"`
+	ID          ID                  `json:"id"`
+	Title       Title               `json:"title"`
+	Description Description         `json:"description"`
+	Date        Date                `json:"date"`
+	IsRecurring bool                `json:"is_recurring"`
+	Status      TaskStatus          `json:"status"`
+	Recurring   *RecurringTask      `json:"recurring,omitempty"`
+	Tags        []tag.Tag           `json:"tags"`
+	IsDone      bool                `json:"-"`
+	DoneDates   map[string]struct{} `json:"-"`
 }
 
 func NewTask(
-	title Title,
-	description Description,
-	date Date,
-	dueDate Date,
+	title string,
+	description string,
+	date time.Time,
 	isRecurring bool,
-	recurring *RecurringTask,
 	tags []string,
-) (*Task, error) {
-	if date.IsAfter(dueDate) {
-		return nil, errors.New("date must be before due date")
-	}
+) (*Task, *apperrors.ValidationMap) {
+	vm := apperrors.NewValidationMap()
+	nTitle, err := NewTitle(title)
+	vm.Add("task.title", err)
 
-	ntags, err := tag.NewTags(tags)
-	if err != nil {
-		return nil, err
-	}
+	nDescription, err := NewDescription(description)
+	vm.Add("task.description", err)
+
+	nDate, errs := NewDate(date)
+	vm.Add("task.date", errs...)
+
+	nTags, errs := tag.NewTags(tags)
+	vm.Add("task.tags", errs...)
 
 	return &Task{
-		Title:       title,
-		Description: description,
-		Date:        date,
+		Title:       nTitle,
+		Description: nDescription,
+		Date:        nDate,
 		IsRecurring: isRecurring,
-		Tags:        ntags,
-	}, nil
+		Tags:        nTags,
+	}, vm
 }

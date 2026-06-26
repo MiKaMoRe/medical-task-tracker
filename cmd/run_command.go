@@ -44,6 +44,9 @@ func runCommand() {
 
 	application := app.NewApp(cfg, gormDB, log)
 
+	mux := http.NewServeMux()
+	application.RegisterRoutes(mux)
+
 	srv := &http.Server{
 		Addr:    ":" + cfg.AppPort,
 		Handler: application.Handler(),

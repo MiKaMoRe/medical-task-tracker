@@ -9,31 +9,32 @@ type Tag struct {
 	Name Name `json:"name"`
 }
 
-func NewTag(name string) (Tag, error) {
+func NewTag(name string) (Tag, []error) {
+	errs := []error{}
 	if len(name) > 255 {
-		return Tag{}, errors.New("name must be less than 255 characters")
+		errs = append(errs, errors.New("name must be less than 255 characters"))
 	}
 
 	if name == "" {
-		return Tag{}, errors.New("name cannot be empty")
+		errs = append(errs, errors.New("name cannot be empty"))
 	}
 
 	nName, err := NewName(name)
 	if err != nil {
-		return Tag{}, err
+		errs = append(errs, err)
 	}
-	return Tag{Name: nName}, nil
+	return Tag{Name: nName}, errs
 }
 
-func NewTags(names []string) ([]Tag, error) {
+func NewTags(names []string) ([]Tag, []error) {
 	tags := make([]Tag, len(names))
 	errs := make([]error, len(names))
 	for i, name := range names {
 		tag, err := NewTag(name)
 		if err != nil {
-			errs[i] = err
+			errs = append(errs, err...)
 		}
 		tags[i] = tag
 	}
-	return tags, errors.Join(errs...)
+	return tags, errs
 }

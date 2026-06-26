@@ -1,20 +1,54 @@
 package apperrors
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
-type ValidationErrors struct {
-	Errors []ValidationError
+type ValidationMap struct {
+	Errors map[string][]string `json:"validation_errors"`
 }
 
-type ValidationError struct {
-	Field   string
-	Message string
+func NewValidationMap() *ValidationMap {
+	return &ValidationMap{Errors: make(map[string][]string)}
 }
 
-func Validation(errs ...ValidationError) error {
-	return &ValidationErrors{Errors: errs}
+func (e *ValidationMap) Add(field string, errs ...error) {
+	for _, err := range errs {
+		if err == nil {
+			continue
+		}
+		e.Errors[field] = append(e.Errors[field], err.Error())
+	}
 }
 
-func (e *ValidationErrors) Error() string {
-	return fmt.Sprintf("validation failed: %d error(s)", len(e.Errors))
+func MergeValidationMaps(maps ...*ValidationMap) *ValidationMap {
+	vm := NewValidationMap()
+	for _, m := range maps {
+		for field, msgs := range m.Errors {
+			vm.Errors[field] = append(vm.Errors[field], msgs...)
+		}
+	}
+	return vm
+}
+
+func (e *ValidationMap) Error() string {
+	errors := make([]string, 0, len(e.Errors))
+	for field, errs := range e.Errors {
+		for _, err := range errs {
+			errors = append(errors, fmt.Sprintf("%s: %s", field, err))
+		}
+	}
+	return strings.Join(errors, "\n")
+}
+
+func (e *ValidationMap) IsEmpty() bool {
+	return len(e.Errors) == 0
+}
+
+func (e *ValidationMap) Err() error {
+	if e.IsEmpty() {
+		return nil
+	}
+	return e
 }

@@ -1,29 +1,45 @@
 package task
 
-import "time"
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"time"
+)
 
 type Date time.Time
 
 func (d Date) IsBefore(other Date) bool {
-	return d.IsBefore(other)
+	return time.Time(d).Before(time.Time(other))
 }
 
 func (d Date) IsAfter(other Date) bool {
-	return d.IsAfter(other)
+	return time.Time(d).After(time.Time(other))
 }
 
-func NewDate(date string) (Date, error) {
-	dateTime, err := time.Parse(time.DateOnly, date)
-	if err != nil {
-		return Date(time.Time{}), err
+func NewDate(datetime time.Time) (Date, []error) {
+	errs := []error{}
+	if datetime.IsZero() {
+		errs = append(errs, errors.New("date cannot be zero"))
 	}
-	return Date(dateTime.In(time.UTC)), nil
+
+	date := Date(datetime.In(time.UTC))
+	if date.IsBefore(Date(time.Now().In(time.UTC))) {
+		errs = append(errs, errors.New("date cannot be in the past"))
+	}
+
+	return date, errs
 }
 
 func DateFromDB(date string) (Date, error) {
 	dateTime, err := time.Parse(time.DateOnly, date)
 	if err != nil {
-		return Date(time.Time{}), err
+		return Date(time.Time{}), fmt.Errorf("invalid date: %w", err)
 	}
+
 	return Date(dateTime), nil
+}
+
+func (d Date) MarshalJSON() ([]byte, error) {
+	return json.Marshal(time.Time(d))
 }
