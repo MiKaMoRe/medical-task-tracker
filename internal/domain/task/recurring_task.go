@@ -50,6 +50,7 @@ type RecurringTask struct {
 
 type RecurrenceRule interface {
 	isRecurrenceRule()
+	Matches(date time.Time, seriesStart time.Time) bool
 }
 
 type RecurrenceRuleInput struct {
@@ -93,12 +94,18 @@ type WeeklyRecurrenceRule struct {
 }
 
 func (WeeklyRecurrenceRule) isRecurrenceRule() {}
+func (r WeeklyRecurrenceRule) Matches(date time.Time, _ time.Time) bool {
+	return int(date.UTC().Weekday()) == r.WeekDay
+}
 
 type MonthlyRecurrenceRule struct {
 	MonthDay int
 }
 
 func (MonthlyRecurrenceRule) isRecurrenceRule() {}
+func (r MonthlyRecurrenceRule) Matches(date time.Time, _ time.Time) bool {
+	return date.UTC().Day() == r.MonthDay
+}
 
 type YearlyRecurrenceRule struct {
 	Month int
@@ -106,6 +113,10 @@ type YearlyRecurrenceRule struct {
 }
 
 func (YearlyRecurrenceRule) isRecurrenceRule() {}
+func (r YearlyRecurrenceRule) Matches(date time.Time, _ time.Time) bool {
+	date = date.UTC()
+	return int(date.Month()) == r.Month && date.Day() == r.Day
+}
 
 type BiweeklyRecurrenceRule struct {
 	IsOdd   bool
@@ -113,6 +124,12 @@ type BiweeklyRecurrenceRule struct {
 }
 
 func (BiweeklyRecurrenceRule) isRecurrenceRule() {}
+func (r BiweeklyRecurrenceRule) Matches(date time.Time, _ time.Time) bool {
+	date = date.UTC()
+	_, week := date.ISOWeek()
+	isOddWeek := week%2 == 1
+	return int(date.Weekday()) == r.WeekDay && isOddWeek == r.IsOdd
+}
 
 type ShiftRecurrenceRule struct {
 	NumberOfTaskDays  int
@@ -120,12 +137,27 @@ type ShiftRecurrenceRule struct {
 }
 
 func (ShiftRecurrenceRule) isRecurrenceRule() {}
+func (r ShiftRecurrenceRule) Matches(date time.Time, seriesStart time.Time) bool {
+	base := floorDate(seriesStart.UTC())
+	current := floorDate(date.UTC())
+	daysFromStart := int(current.Sub(base).Hours() / 24)
+	cycle := r.NumberOfTaskDays + r.NumberOfShiftDays
+	if cycle <= 0 {
+		return false
+	}
+	dayInCycle := daysFromStart % cycle
+	return dayInCycle >= 0 && dayInCycle < r.NumberOfTaskDays
+}
 
 type ParityRecurrenceRule struct {
 	IsEven bool
 }
 
 func (ParityRecurrenceRule) isRecurrenceRule() {}
+func (r ParityRecurrenceRule) Matches(date time.Time, _ time.Time) bool {
+	isEvenDay := date.UTC().Day()%2 == 0
+	return isEvenDay == r.IsEven
+}
 
 type recurrenceRuleFactory func(input RecurrenceRuleInput) (RecurrenceRule, *apperrors.ValidationMap)
 
@@ -279,4 +311,9 @@ func requiredBool(field string, value *bool, vm *apperrors.ValidationMap) (bool,
 		return false, false
 	}
 	return *value, true
+}
+
+func floorDate(t time.Time) time.Time {
+	t = t.UTC()
+	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
 }

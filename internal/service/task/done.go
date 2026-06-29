@@ -23,8 +23,7 @@ func (s *TaskService) MarkTaskDone(ctx context.Context, id domaintask.ID, occurr
 			return apperrors.NewAppError("occurrence_date is required for recurring task")
 		}
 
-		occurrence := occurrenceDate.UTC()
-		occurrenceDay := time.Date(occurrence.Year(), occurrence.Month(), occurrence.Day(), 0, 0, 0, 0, time.UTC)
+		occurrenceDay := floorDate(occurrenceDate.UTC())
 		if err := validateRecurringOccurrenceDate(targetTask, occurrenceDay); err != nil {
 			return err
 		}
@@ -38,7 +37,7 @@ func validateRecurringOccurrenceDate(t *domaintask.Task, occurrenceDate time.Tim
 	if occurrenceDate.Before(taskStart) {
 		return apperrors.NewAppError("occurrence_date cannot be earlier than task start date")
 	}
-	if t.Recurring == nil || t.Recurring.Rule == nil {
+	if !hasRecurringRule(t) {
 		return apperrors.NewAppError("recurring task has invalid recurrence rule")
 	}
 
