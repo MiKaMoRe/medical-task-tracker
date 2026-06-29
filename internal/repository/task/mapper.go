@@ -17,7 +17,7 @@ func toCreateTaskDTO(t *task.Task) CreateTaskDTO {
 		Tags:        tagNames(t.Tags),
 	}
 
-	if t.Recurring != nil {
+	if t.IsRecurring && t.Recurring != nil {
 		recurringRuleDTO := &CreateRecurringRuleDTO{
 			RecurringType: t.Recurring.RecurringType.String(),
 		}
@@ -131,7 +131,7 @@ func toDomainTask(dto *TaskDTO) *task.Task {
 		DoneDates:   toDoneDatesMap(dto.Completions),
 	}
 
-	if dto.RecurrenceRule != nil {
+	if dto.IsRecurrence && dto.RecurrenceRule != nil {
 		recurringTask := &task.RecurringTask{
 			RecurringType: task.RecurringType(dto.RecurrenceRule.RuleType),
 			Rule:          mapRecurrenceRule(dto.RecurrenceRule),

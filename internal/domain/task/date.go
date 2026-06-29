@@ -24,7 +24,7 @@ func NewDate(datetime time.Time) (Date, []error) {
 	}
 
 	date := Date(datetime.In(time.UTC))
-	if date.IsBefore(Date(time.Now().In(time.UTC))) {
+	if floorDate(time.Time(date)).Before(floorDate(time.Now().In(time.UTC))) {
 		errs = append(errs, errors.New("date cannot be in the past"))
 	}
 

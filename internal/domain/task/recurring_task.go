@@ -174,7 +174,7 @@ func NewRecurringTask(recurringType string, endDateT *time.Time, ruleInput Recur
 	vm := apperrors.NewValidationMap()
 	var endDate *Date
 	if endDateT != nil {
-		if endDateT.Before(time.Now().In(time.UTC)) {
+		if floorDate(endDateT.In(time.UTC)).Before(floorDate(time.Now().In(time.UTC))) {
 			vm.Add("recurring.end_date", errors.New("end date must be after current date"))
 		}
 

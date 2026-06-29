@@ -60,6 +60,9 @@ func validateTask(t *task.Task) *apperrors.ValidationMap {
 	if t.IsRecurring && t.Recurring == nil {
 		vm.Add("task.recurring", errors.New("recurring task is required when is_recurring is true"))
 	}
+	if !t.IsRecurring && t.Recurring != nil {
+		vm.Add("task.recurring", errors.New("recurring payload must be empty when is_recurring is false"))
+	}
 	if t.Recurring != nil && t.Recurring.Rule == nil {
 		vm.Add("task.recurring.rule", errors.New("recurring rule is required"))
 	}

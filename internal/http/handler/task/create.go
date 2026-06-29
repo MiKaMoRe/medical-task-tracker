@@ -2,6 +2,7 @@ package task
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"time"
 
@@ -47,6 +48,12 @@ func mapTaskRequest(
 	recurringReq *CreateRecurringTask,
 ) (*domaintask.Task, error) {
 	valErrs := apperrors.NewValidationMap()
+	if isRecurring && recurringReq == nil {
+		valErrs.Add("task.recurring", errors.New("recurring task is required when is_recurring is true"))
+	}
+	if !isRecurring && recurringReq != nil {
+		valErrs.Add("task.recurring", errors.New("recurring payload must be empty when is_recurring is false"))
+	}
 
 	task, errs := domaintask.NewTask(
 		title,
@@ -59,7 +66,7 @@ func mapTaskRequest(
 		valErrs = apperrors.MergeValidationMaps(valErrs, errs)
 	}
 
-	if recurringReq != nil {
+	if recurringReq != nil && isRecurring {
 		recurring, errs := domaintask.NewRecurringTask(
 			recurringReq.RecurringType,
 			recurringReq.EndDate,
